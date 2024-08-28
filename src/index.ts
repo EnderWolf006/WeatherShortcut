@@ -182,10 +182,20 @@ basekit.addField({
           sunset: weather.sunset,
         }
       }
-    } catch (e) {
-      return {
-        code: FieldCode.Error,
+    }  catch (error) {
+      function safeJSON(str: any) {
+        try {
+          return JSON.stringify(str);
+        } catch (error) {
+          return String(str);
+        }
       }
+      return {
+        code: FieldCode.Success,
+        data: {
+          error: safeJSON(error),
+        },
+      };
     }
   },
 });
