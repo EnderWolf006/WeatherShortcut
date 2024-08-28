@@ -144,6 +144,11 @@ basekit.addField({
           type: FieldType.Text,
           title: t('label.outField.sunset'),
         },
+        {
+          key:'error',
+          type: FieldType.Text,
+          title: 'Error'
+        }
       ],
     },
   },
@@ -153,12 +158,14 @@ basekit.addField({
       let { location, datetime = new Date().getTime(), apikey } = formItemParams;
       location = location[0].text
       if (!location) {
+        throw new Error('location 参数不合法')
         return {
           code: FieldCode.InvalidArgument,
         }
       }
       const index = Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
       if (index < 0 || index >= 7) {
+        throw new Error('日期 参数不合法')
         return {
           code: FieldCode.InvalidArgument,
         }
@@ -180,6 +187,7 @@ basekit.addField({
           humidity: Number(weather.humidity),
           sunrise: weather.sunrise,
           sunset: weather.sunset,
+          error: '',
         }
       }
     }  catch (error) {
