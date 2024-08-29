@@ -158,14 +158,14 @@ basekit.addField({
       let { location, datetime = new Date().getTime(), apikey } = formItemParams;
       location = location[0].text
       if (!location) {
-        throw new Error('location 参数不合法')
+        throw new Error('查询地点为空')
         return {
           code: FieldCode.InvalidArgument,
         }
       }
       const index = Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
       if (index < 0 || index >= 7) {
-        throw new Error('日期 参数不合法')
+        throw new Error('只支持未来7天内')
         return {
           code: FieldCode.InvalidArgument,
         }
@@ -179,7 +179,7 @@ basekit.addField({
       return {
         code: FieldCode.Success,
         data: {
-          weather: weather.textDay,
+          weather: weather.textDay ?? '',
           UV: Number(weather.uvIndex),
           high: Number(weather.tempMax),
           low: Number(weather.tempMin),
@@ -201,6 +201,7 @@ basekit.addField({
       return {
         code: FieldCode.Success,
         data: {
+          weather:'',
           error: safeJSON(error),
         },
       };
