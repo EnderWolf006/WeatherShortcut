@@ -143,11 +143,6 @@ basekit.addField({
           key: 'sunset',
           type: FieldType.Text,
           title: t('label.outField.sunset'),
-        },
-        {
-          key:'error',
-          type: FieldType.Text,
-          title: 'Error'
         }
       ],
     },
@@ -179,7 +174,7 @@ basekit.addField({
       return {
         code: FieldCode.Success,
         data: {
-          weather: weather.textDay ?? '',
+          weather: weather.textDay ?? 'Error',
           UV: Number(weather.uvIndex),
           high: Number(weather.tempMax),
           low: Number(weather.tempMin),
@@ -190,7 +185,7 @@ basekit.addField({
           error: '',
         }
       }
-    }  catch (error) {
+    } catch (error) {
       function safeJSON(str: any) {
         try {
           return JSON.stringify(str);
@@ -201,8 +196,7 @@ basekit.addField({
       return {
         code: FieldCode.Success,
         data: {
-          weather:'',
-          error: safeJSON(error),
+          weather: String(error)
         },
       };
     }
