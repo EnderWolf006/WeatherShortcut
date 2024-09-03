@@ -154,16 +154,10 @@ basekit.addField({
       location = location[0].text
       if (!location) {
         throw new Error('查询地点为空')
-        return {
-          code: FieldCode.InvalidArgument,
-        }
       }
       const index = Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
       if (index < 0 || index >= 7) {
         throw new Error('只支持未来7天内')
-        return {
-          code: FieldCode.InvalidArgument,
-        }
       }
       let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
       apikey = apikey || 'a009a7e44f234f4fa221403f16b68842';
@@ -186,13 +180,6 @@ basekit.addField({
         }
       }
     } catch (error) {
-      function safeJSON(str: any) {
-        try {
-          return JSON.stringify(str);
-        } catch (error) {
-          return String(str);
-        }
-      }
       return {
         code: FieldCode.Success,
         data: {
