@@ -12,7 +12,7 @@ basekit.addField({
         'label.fieldSelect.position': '请选择位置所在字段',
         'label.fieldSelect.time': '请选择日期时间所在字段',
         'label.input.key': '请输入APIKey',
-        'label.input.key.placeholder': '请输入和风天气APIKey（若选择免费版则留空）',
+        'label.input.key.placeholder': '请输入和风天气APIKey（若选择免费版请留空）',
         'label.outField.weather': '天气文字描述（如阴晴雨雪）',
         'label.outField.UV': '紫外线强度',
         'label.outField.high': '当天最高温度（摄氏度）',
@@ -83,6 +83,17 @@ basekit.addField({
       props: {
         placeholder: t('label.input.key.placeholder'),
       },
+      tooltips:[
+        {
+          type:'text',
+          content:'和风天气APIKey获取指南'
+        },
+        {
+          type:'link',
+          text:'点我跳转',
+          link:'https://wingahead.feishu.cn/wiki/PlbbwrSGqiz0pIk3SQkc41gfnEd?from=from_copylink'
+        }
+      ] as any,
     },
   ],
   // 定义捷径的返回结果类型
@@ -161,23 +172,33 @@ basekit.addField({
       }
       let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
       apikey = apikey || 'a009a7e44f234f4fa221403f16b68842';
-      let geoapi = `https://geoapi.qweather.com/v2/city/lookup?key=${apikey}&number=1&location=${location}`;
-      const locationId = (await (await context.fetch(geoapi, { method: 'GET' })).json()).location[0].id
-      let weatherAPI = `https://${weatherAPIDomain}/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
-      const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
-      return {
-        code: FieldCode.Success,
-        data: {
-          weather: weather.textDay ?? 'Error',
-          UV: Number(weather.uvIndex),
-          high: Number(weather.tempMax),
-          low: Number(weather.tempMin),
-          wind: weather.windScaleDay + '级',
-          humidity: Number(weather.humidity),
-          sunrise: weather.sunrise,
-          sunset: weather.sunset,
-          error: '',
+      try {
+        let geoapi = `https://geoapi.qweather.com/v2/city/lookup?key=${apikey}&number=1&location=${location}`;
+        const locationId = (await (await context.fetch(geoapi, { method: 'GET' })).json()).location[0].id
+        let weatherAPI = `https://${weatherAPIDomain}/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
+        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+
+        return {
+          code: FieldCode.Success,
+          data: {
+            weather: weather.textDay ?? 'Error',
+            UV: Number(weather.uvIndex),
+            high: Number(weather.tempMax),
+            low: Number(weather.tempMin),
+            wind: weather.windScaleDay + '级',
+            humidity: Number(weather.humidity),
+            sunrise: weather.sunrise,
+            sunset: weather.sunset,
+            error: '',
+          }
         }
+      } catch (e) {
+        return {
+          code: FieldCode.Success,
+          data: {
+            weather: String(apikey == 'a009a7e44f234f4fa221403f16b68842' ? '免费共享额度用尽或APIKey无效': '额度用尽或APIKey无效'),
+          },
+        };
       }
     } catch (error) {
       return {
