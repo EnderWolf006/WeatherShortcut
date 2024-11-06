@@ -170,13 +170,36 @@ basekit.addField({
       if (index < 0 || index >= 7) {
         throw new Error('只支持未来7天内')
       }
-      let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
+      // let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
       apikey = apikey || 'a009a7e44f234f4fa221403f16b68842';
+      
+      async function freeApiKey(locationId) {
+        let weatherAPI = `https://devapi.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
+        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+        return weather;
+      }
+
+      async function othersApiKey(locationId) {
+        let weatherAPI = `https://api.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
+        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+        return weather;
+      }
+
       try {
         let geoapi = `https://geoapi.qweather.com/v2/city/lookup?key=${apikey}&number=1&location=${location}`;
-        const locationId = (await (await context.fetch(geoapi, { method: 'GET' })).json()).location[0].id
-        let weatherAPI = `https://${weatherAPIDomain}/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
-        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+        const locationId = (await (await context.fetch(geoapi, { method: 'GET' })).json()).location[0].id;
+
+        let weather: any = await new Promise((resolve, reject) => {
+          // 优先试一下免费的api key
+          freeApiKey(locationId).then((w) => {
+            resolve(w);
+          }).catch((e) => {
+            reject(e)
+          })
+        }).catch(() => {
+          // 再试一下付费的api key
+          return othersApiKey(locationId)
+        })
 
         return {
           code: FieldCode.Success,
