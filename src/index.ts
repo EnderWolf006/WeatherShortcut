@@ -83,15 +83,15 @@ basekit.addField({
       props: {
         placeholder: t('label.input.key.placeholder'),
       },
-      tooltips:[
+      tooltips: [
         {
-          type:'text',
-          content:'和风天气APIKey获取指南'
+          type: 'text',
+          content: '和风天气APIKey获取指南'
         },
         {
-          type:'link',
-          text:'点我跳转',
-          link:'https://wingahead.feishu.cn/wiki/PlbbwrSGqiz0pIk3SQkc41gfnEd?from=from_copylink'
+          type: 'link',
+          text: '点我跳转',
+          link: 'https://wingahead.feishu.cn/wiki/PlbbwrSGqiz0pIk3SQkc41gfnEd?from=from_copylink'
         }
       ] as any,
     },
@@ -166,22 +166,25 @@ basekit.addField({
       if (!location) {
         throw new Error('查询地点为空')
       }
-      const index = Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      const index = getDaysDifference(datetime, Date.now()); // Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
       if (index < 0 || index >= 7) {
-        throw new Error('只支持未来7天内')
+        throw new Error('只支持未来7天内');// 包含今天，比如11.07-11.13日的天气都可以返回
       }
       // let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
       apikey = apikey || 'a009a7e44f234f4fa221403f16b68842';
-      
+
       async function freeApiKey(locationId) {
         let weatherAPI = `https://devapi.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
-        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+        const weathers = (await (await context.fetch(weatherAPI, { method: 'GET' })).json())
+        const weather = weathers.daily[index];
+        // console.log(index, JSON.stringify(weathers.daily,null,'  '));
         return weather;
       }
 
       async function othersApiKey(locationId) {
         let weatherAPI = `https://api.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
-        const weather = (await (await context.fetch(weatherAPI, { method: 'GET' })).json()).daily[index];
+        const weathers = (await (await context.fetch(weatherAPI, { method: 'GET' })).json())
+        const weather = weathers.daily[index];
         return weather;
       }
 
@@ -216,10 +219,11 @@ basekit.addField({
           }
         }
       } catch (e) {
+        console.log(String(e));
         return {
           code: FieldCode.Success,
           data: {
-            weather: String(apikey == 'a009a7e44f234f4fa221403f16b68842' ? '免费共享额度用尽或APIKey无效': '额度用尽或APIKey无效'),
+            weather: String(apikey == 'a009a7e44f234f4fa221403f16b68842' ? '免费共享额度用尽或APIKey无效' : '额度用尽或APIKey无效'),
           },
         };
       }
@@ -234,3 +238,19 @@ basekit.addField({
   },
 });
 export default basekit;
+
+function getDaysDifference(timestampA, timestampB) {
+  // 将时间戳转换为日期对象
+  const dateA = new Date(timestampA);
+  const dateB = new Date(timestampB);
+
+  // 设置日期部分为零点
+  dateA.setHours(0, 0, 0, 0);
+  dateB.setHours(0, 0, 0, 0);
+
+  // 计算相差的天数
+  const timeDiff = dateA.getTime() - dateB.getTime();
+  const dayDiff = timeDiff / (1000 * 3600 * 24);
+
+  return Math.round(dayDiff);
+}
