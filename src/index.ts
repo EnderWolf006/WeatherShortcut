@@ -167,23 +167,25 @@ basekit.addField({
         throw new Error('查询地点为空')
       }
       const index = getDaysDifference(datetime, Date.now()); // Math.floor((datetime - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      if (index < 0 || index >= 7) {
-        throw new Error('只支持未来7天内');// 包含今天，比如11.07-11.13日的天气都可以返回
+      if (index < 0 || index >= 30) {
+        throw new Error('只支持未来30天内');// 包含今天，比如11.07-11.13日的天气都可以返回
       }
+      let d = getDay(index);
       // let weatherAPIDomain = apikey ? 'api.qweather.com' : 'devapi.qweather.com';
       apikey = apikey || 'a009a7e44f234f4fa221403f16b68842';
-
+      // console.log('==apikey', apikey)
       async function freeApiKey(locationId) {
-        let weatherAPI = `https://devapi.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
+        let weatherAPI = `https://devapi.qweather.com/v7/weather/${d}d?key=${apikey}&location=${locationId}&lang=zh`;
         const weathers = (await (await context.fetch(weatherAPI, { method: 'GET' })).json())
+        // console.log('==free',{index,d, code: weathers.code,length: weathers.daily.length});
         const weather = weathers.daily[index];
-        // console.log(index, JSON.stringify(weathers.daily,null,'  '));
         return weather;
       }
 
       async function othersApiKey(locationId) {
-        let weatherAPI = `https://api.qweather.com/v7/weather/7d?key=${apikey}&location=${locationId}&lang=zh`;
+        let weatherAPI = `https://api.qweather.com/v7/weather/${d}d?key=${apikey}&location=${locationId}&lang=zh`;
         const weathers = (await (await context.fetch(weatherAPI, { method: 'GET' })).json())
+        // console.log('==others',{index,d, code: weathers.code,length: weathers.daily.length});
         const weather = weathers.daily[index];
         return weather;
       }
@@ -191,18 +193,31 @@ basekit.addField({
       try {
         let geoapi = `https://geoapi.qweather.com/v2/city/lookup?key=${apikey}&number=1&location=${location}`;
         const locationId = (await (await context.fetch(geoapi, { method: 'GET' })).json()).location[0].id;
+        let err;
+        let weather: any;
+        if (d <= 7) {
+          weather = await freeApiKey(locationId)// 先试一下免费的api
+            .then((v) => v)
+            .catch(() => {
+              // 再试一下付费的api key
+              return othersApiKey(locationId)
+            }).catch((v) => {
+              err = String(v);
+            })
 
-        let weather: any = await new Promise((resolve, reject) => {
-          // 优先试一下免费的api key
-          freeApiKey(locationId).then((w) => {
-            resolve(w);
-          }).catch((e) => {
-            reject(e)
+        } else {
+          weather = await othersApiKey(locationId).catch((v) => {
+            err = String(v);
           })
-        }).catch(() => {
-          // 再试一下付费的api key
-          return othersApiKey(locationId)
+        }
+        console.log({
+          d,
+          err,
+
         })
+        if (!weather) {
+          throw err
+        }
 
         return {
           code: FieldCode.Success,
@@ -223,7 +238,7 @@ basekit.addField({
         return {
           code: FieldCode.Success,
           data: {
-            weather: String(apikey == 'a009a7e44f234f4fa221403f16b68842' ? '免费共享额度用尽或APIKey无效' : '额度用尽或APIKey无效'),
+            weather: String(apikey == 'a009a7e44f234f4fa221403f16b68842' ? '免费共享额度用尽或APIKey无效' : '额度用尽或APIKey无效') + e,
           },
         };
       }
@@ -253,4 +268,30 @@ function getDaysDifference(timestampA, timestampB) {
   const dayDiff = timeDiff / (1000 * 3600 * 24);
 
   return Math.round(dayDiff);
+}
+
+//https://dev.qweather.com/docs/api/weather/weather-daily-forecast/
+function getDay(day: number) {
+  let d = 3;
+  if (day < 0 || day >= 30) {
+    throw new Error('只支持未来30天内');
+  }
+  if (day < 30) {
+    d = 30
+  }
+  if (day < 15) {
+    d = 15
+  }
+  if (day < 10) {
+    d = 10
+  }
+  if (day < 7) {
+    d = 7;
+  }
+
+  if (day < 3) {
+    d = 3
+  }
+
+  return d;
 }
